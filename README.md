@@ -8,63 +8,68 @@ Step 1: CD to the project root directory `cart_api`
 
 Step 2: Run `./mvnw spring-boot:run` command
 
-## Lesson Overview (24 Feb 2023, Fri)
+## Lesson Overview (3 Mar 2023, Fri)
 
-Previously, we have
-- Create a spring starter project with web dependency [here](https://start.spring.io/)
-- Used several annotations to create RESTful API
-```
-@RestController
-@RequestMapping
-@RequestBody
-@ResponseBody
-@PathVariable
-@Autowired
-@Service
-```
+Lesson Coverage:
 
-In this lesson, we will cover:
+- Pros & Cons of Database Access Layer?
+- Implement `@Entity` class which represents a table in database
+- Implement an interface and extends `JpaRepository`
+- Get started on implementing RESTful APIs
 
-1. Configure a custom singleton object using `@Bean` annotation
-1. The use of `@Value` annotation to inject environmental variable
-1. Implementing a logger to capture all API Input
+## Pros & Cons of DAL (Data Access Layer)
 
-Essentially, there are three common ways to configure and inject Spring Bean/Value.
-1. Using `@Component` or its children - @RestController, @Service, etcs..
-1. Using `@Value` to inject value picked up from `application.properties` file.
-1. Using `@Bean` on a method that returns a configured object.
+|Pros|Cons|
+|-|-|
+|Ability to switch database without changing codebase.|May face limitation in constructing complex query.|
+|To overcome complex query, there are multiple approaches to query database. Some of them brings unique purpose to add value to developers by helping developer to focus on business logics.|To overcome complex query, there are multiple approaches to query database using code which can be confusing to new learners.|
 
-Practically, we will create this endpoint:
+### Three Way to Query DB
 
-|Path|Verb|Return Status|Resp Body|Remarks|
-|-|-|-|-|-|
-|/payment?payable=5.3|POST|200|`{"message":"Payment successful!"}`|Payment successful|
-|||400|`{"message":"Payable cannot below minimum sum of ? "}`|When payable is below minimum payable sum.|
-|||400|`{"message":"Payable cannot be negative."}`|When payable is a negative value.|
+1. Using JpaRepository that automatically maps method name to DB query.
+    ```java
+    public List<Product> findByNameLike(String name); 
+    public Optional<Product> findById(long id);
+    ```
+    More examples [here](https://javatute.com/jpa/how-to-write-custom-method-in-repository-in-spring-data-jpa/)
 
-Hint:
-- You have not learned how to capture value from Query Parameter `?payable=5.2`
-- You have not learned how to return a JSON Body in the Response (high difficulty)
+    Observation(s):
+    - JpaRepository save developer a lot of time in constructing common queries.
+    - There will be limitation when faced with multiple entity joins query
 
-## Lesson Overview (20 Feb 2023, Mon)
 
-1. Generate a Spring Project with the web dependency added
-1. Annotations Explanations:
-    - @SpringBootApplication
-    - @RestController
-    - @RequestMapping
-    - @RequestBody
-    - @RequestResponse
+2. Using @Query notation and write JPQL
+    ```java
+    @Query("select p from Product p where p.price > ?1")
+    public List<Product> findExpensiveProducts(float price);
+    ```
+    More info [here](https://www.baeldung.com/spring-data-jpa-query)
 
-By the end of the class, we would have created:
+    Observation(s):
+    - JPQL is Java Persistent Query Language, where it will be translated to the native query language by the DAL.
+    - We should not write native query because it defeat the purpose of using DAL to provide a layer of abstraction that takes care of agnostic DB queries.
 
-1. GET /products
-1. GET /products/{id}
-1. POST /products
-1. PUT /products/{id}
-1. DELETE /products/{id}
 
-## Standard REST API
+3. Using `CriteriaBuilder`
+    ```java
+    CriteriaBuilder cb = em.getCriteriaBuilder();
+    CriteriaQuery<Product> cq = cb.createQuery(Product.class);
+
+    Root<Product> product = cq.from(Product.class);
+    Predicate expensiveProductPredicate = cb.greaterThan(product.get(price));
+    Predicate nameLikePredicate = cb.like(product.get("name"), "%" + pName + "%");
+    cq.where(expensiveProductPredicate, nameLikePredicate);
+
+    TypedQuery<Product> query = em.createQuery(cq);
+    return query.getResultList();
+    ```
+    More info [here](https://www.baeldung.com/spring-data-criteria-queries)
+
+    Observation(s):
+    - The code is complex to use
+    - Yet, provide high flexibility in build queryies dynamically
+
+## RESTful APIs
 
 |Path|Verb|Has Request Body|Has Response Body|Purpose|
 |-|-|-|-|-|
@@ -73,5 +78,3 @@ By the end of the class, we would have created:
 |/entities|POST|Yes|YES|Create an entity|
 |/entities/{id}|PUT|YES|YES|Update an entity|
 |/entities/{id}|DELETE|NO|NO|Delete an entity|
-
-For more info - [Link](https://www.geeksforgeeks.org/rest-api-architectural-constraints/)
