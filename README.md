@@ -10,12 +10,20 @@ Step 2: Run `./mvnw spring-boot:run` command
 
 ## Lesson Overview (3 Mar 2023, Fri)
 
+> We need to switch spring-boot-starter-parent version from `3.0.2` to `2.7.7` due to packaging issues.
+
 Lesson Coverage:
 
 - Pros & Cons of Database Access Layer?
 - Implement `@Entity` class which represents a table in database
 - Implement an interface and extends `JpaRepository`
 - Get started on implementing RESTful APIs
+
+Create this credential in MySQL and then use it on `application.properties`.
+```sql
+CREATE USER 'cartdbuser'@'localhost' IDENTIFIED WITH mysql_native_password BY 'cartdbpass';
+GRANT all privileges on cartdb.* to 'cartdbuser'@'localhost';
+```
 
 ## Pros & Cons of DAL (Data Access Layer)
 
